@@ -1,0 +1,21 @@
+{
+  "name": "rss-job-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bot": "node ./index.js",
+    "fix:vacancies": "node ./scripts/fix-vacancies.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "better-sqlite3": "^12.5.0",
+    "dotenv": "^17.2.3",
+    "grammy": "^1.39.3",
+    "rss-parser": "^3.13.0"
+  }
+}
