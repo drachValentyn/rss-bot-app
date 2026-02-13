@@ -45,3 +45,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# web-client (nested Next.js app)
+/web-client/node_modules
+/web-client/.next
+/web-client/out
+/web-client/build
+/web-client/.vercel
+/web-client/.env*
+/web-client/npm-debug.log*
+/web-client/yarn-debug.log*
+/web-client/yarn-error.log*
+/web-client/.pnpm-debug.log*
