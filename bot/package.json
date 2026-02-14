@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "bot": "node ./index.js",
-    "fix:vacancies": "node ./scripts/fix-vacancies.js"
+    "fix:vacancies": "node ./scripts/fix-vacancies.js",
+    "reseed:vacancies": "node ./scripts/reseed-vacancies.js"
   },
   "keywords": [],
   "author": "",

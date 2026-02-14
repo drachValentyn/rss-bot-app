@@ -349,8 +349,8 @@ class JobRepository {
     const result = await this.pool.query(`
       SELECT external_id AS id, title, url AS link, published_at
       FROM vacancies
-      WHERE "createdAt" >= date_trunc('day', NOW())
-      ORDER BY "createdAt" DESC
+      WHERE published_at >= date_trunc('day', NOW())
+      ORDER BY published_at DESC
       LIMIT 100
     `);
     return result.rows;
@@ -361,9 +361,9 @@ class JobRepository {
     const result = await this.pool.query(`
       SELECT external_id AS id, title, url AS link, published_at
       FROM vacancies
-      WHERE "createdAt" >= date_trunc('day', NOW()) - INTERVAL '1 day'
-        AND "createdAt" < date_trunc('day', NOW())
-      ORDER BY "createdAt" DESC
+      WHERE published_at >= date_trunc('day', NOW()) - INTERVAL '1 day'
+        AND published_at < date_trunc('day', NOW())
+      ORDER BY published_at DESC
       LIMIT 100
     `);
     return result.rows;
@@ -374,8 +374,8 @@ class JobRepository {
     const result = await this.pool.query(`
       SELECT external_id AS id, title, url AS link, published_at
       FROM vacancies
-      WHERE "createdAt" >= NOW() - INTERVAL '7 day'
-      ORDER BY "createdAt" DESC
+      WHERE published_at >= NOW() - INTERVAL '7 day'
+      ORDER BY published_at DESC
       LIMIT 200
     `);
     return result.rows;
@@ -387,6 +387,19 @@ class JobRepository {
       `SELECT 1 FROM vacancies LIMIT 1`,
     );
     return result.rows.length === 0;
+  }
+
+  async clearVacancies() {
+    await this.writer.flush();
+    await this.pool.query(`TRUNCATE TABLE vacancies`);
+  }
+
+  async countVacancies() {
+    await this.writer.flush();
+    const result = await this.pool.query(
+      `SELECT COUNT(*)::int AS count FROM vacancies`,
+    );
+    return result.rows[0]?.count ?? 0;
   }
 
   async shutdown() {
