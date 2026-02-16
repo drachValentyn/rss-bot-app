@@ -177,7 +177,7 @@ class JobBot {
       for (const job of jobs) {
         await this.bot.api.sendMessage(
           chatId,
-          `💼 *${job.title}*\n[Переглянути вакансію](${job.link})`,
+          formatJobMessage(job, "/today"),
           { parse_mode: "Markdown" },
         );
       }
@@ -195,7 +195,7 @@ class JobBot {
       for (const job of jobs) {
         await this.bot.api.sendMessage(
           chatId,
-          `💼 *${job.title}*\n[Переглянути вакансію](${job.link})`,
+          formatJobMessage(job, "/yesterday"),
           { parse_mode: "Markdown" },
         );
       }
@@ -216,7 +216,7 @@ class JobBot {
       for (const job of jobs) {
         await this.bot.api.sendMessage(
           chatId,
-          `💼 *${job.title}*\n[Переглянути вакансію](${job.link})`,
+          formatJobMessage(job, "/week"),
           { parse_mode: "Markdown" },
         );
       }
@@ -293,7 +293,7 @@ class JobBot {
             if (!applyFilters(sub, item)) continue;
             if (!passDateFilter(sub, item)) continue;
 
-            const message = formatJobMessage(item);
+            const message = formatJobMessage(item, "AUTO-RSS");
 
             try {
               await this.bot.api.sendMessage(sub.chat_id, message, {

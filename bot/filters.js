@@ -53,8 +53,10 @@ export const passDateFilter = (sub, item) => {
   }
 };
 
-export const formatJobMessage = (item) => {
+export const formatJobMessage = (item, sourceLabel = "UNKNOWN") => {
   const messageLines = [];
+  messageLines.push(`📌 Джерело: \`${sourceLabel}\``);
+  messageLines.push("");
   messageLines.push(`💼 *${item.title || "Без назви"}*`);
 
   if (item.contentSnippet) {
