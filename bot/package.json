@@ -5,18 +5,15 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "bot": "node ./index.js",
-    "fix:vacancies": "node ./scripts/fix-vacancies.js",
-    "reseed:vacancies": "node ./scripts/reseed-vacancies.js"
+    "bot": "node ./index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "better-sqlite3": "^12.5.0",
     "dotenv": "^17.2.3",
     "grammy": "^1.39.3",
-    "rss-parser": "^3.13.0"
+    "pg": "^8.18.0"
   }
 }

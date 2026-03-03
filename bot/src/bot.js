@@ -1,22 +1,11 @@
 import { Bot } from "grammy";
-import RSSParser from "rss-parser";
-import { applyFilters, formatJobMessage, passDateFilter } from "./filters.js";
+import { formatJobMessage } from "./filters.js";
 
 class JobBot {
   constructor(config, repository) {
     this.config = config;
     this.repo = repository;
     this.bot = new Bot(config.telegramToken);
-    this.rssParser = new RSSParser({
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; JobRSSBot/1.0; +https://t.me/jobs_rss_bot)",
-        Accept: "application/rss+xml,text/xml;q=0.9,*/*;q=0.8",
-      },
-      timeout: 10000,
-    });
-    this.isChecking = false;
-    this.isWarmup = null;
   }
 
   async setupCommands() {
@@ -223,114 +212,8 @@ class JobBot {
     });
   }
 
-  async checkRSS() {
-    if (this.isChecking) {
-      console.log("Попередня перевірка RSS ще триває, пропускаємо цикл.");
-      return;
-    }
-
-    this.isChecking = true;
-
-    try {
-      console.log("Перевірка RSS...");
-
-      const subscribers = await this.repo.getAllSubscribers();
-
-      if (subscribers.length === 0) {
-        console.log("Підписників немає, пропускаємо відправку.");
-        return;
-      }
-
-      if (this.isWarmup === null) {
-        this.isWarmup = await this.repo.isVacancyStorageEmpty();
-        if (this.isWarmup) {
-          console.log(
-            "Перший запуск: виконуємо початкову синхронізацію без розсилки старих вакансій.",
-          );
-        }
-      }
-
-      let warmupSaved = 0;
-
-      for (const feedUrl of this.config.rssFeeds) {
-        let feed;
-        try {
-          feed = await this.rssParser.parseURL(feedUrl);
-        } catch (err) {
-          console.error("Помилка при читанні RSS:", feedUrl, err.message);
-          continue;
-        }
-
-        console.log(
-          `[RSS] ${feedUrl} -> отримано ${feed.items.length} елементів`,
-        );
-
-        const normalized = feed.items
-          .map((item) => this.repo.normalizeVacancy(feedUrl, item))
-          .filter(Boolean);
-
-        const newVacancies = await this.repo.filterNewVacancies(normalized);
-        console.log(
-          `[RSS] ${feedUrl} -> нових вакансій: ${newVacancies.length}`,
-        );
-        for (const vacancy of newVacancies) {
-          console.log(
-            `[NEW] ${vacancy.source} | ${vacancy.publishedAt.toISOString()} | ${vacancy.title}`,
-          );
-        }
-
-        this.repo.enqueueVacancies(newVacancies);
-        warmupSaved += newVacancies.length;
-
-        if (this.isWarmup) {
-          continue;
-        }
-
-        for (const vacancy of newVacancies) {
-          const item = vacancy.item;
-
-          for (const sub of subscribers) {
-            if (!applyFilters(sub, item)) continue;
-            if (!passDateFilter(sub, item)) continue;
-
-            const message = formatJobMessage(item, "AUTO-RSS");
-
-            try {
-              await this.bot.api.sendMessage(sub.chat_id, message, {
-                parse_mode: "Markdown",
-                disable_web_page_preview: false,
-              });
-            } catch (err) {
-              console.error(
-                `Не вдалося надіслати повідомлення в chat ${sub.chat_id}:`,
-                err.message,
-              );
-            }
-          }
-        }
-      }
-
-      await this.repo.flushVacancies();
-
-      if (this.isWarmup) {
-        console.log(
-          `Початкова синхронізація завершена. Збережено ${warmupSaved} вакансій.`,
-        );
-        this.isWarmup = false;
-      }
-
-      console.log("Перевірка RSS завершена.");
-    } catch (err) {
-      console.error("Помилка в checkRSS:", err.message);
-    } finally {
-      this.isChecking = false;
-    }
-  }
-
   async start() {
     await this.setupCommands();
-    setInterval(() => this.checkRSS(), this.config.pollInterval);
-    this.checkRSS();
     this.bot.catch((err) => {
       console.error("Помилка grammY middleware:", err.error?.message || err);
     });
