@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Vacancy {
+  id          String   @id @default(uuid())
+  externalId  String   @unique @map("external_id")
+  title       String   @db.VarChar(500)
+  company     String?  @db.VarChar(255)
+  description String?  @db.Text
+  url         String   @db.VarChar(1000)
+  source      String   @db.VarChar(50)
+  publishedAt DateTime @map("published_at")
+  rawData     Json     @map("raw_data")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([publishedAt(sort: Desc)])
+  @@index([source])
+  @@map("vacancies")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  telegramId BigInt?  @unique @map("telegram_id")
+  email      String?  @unique
+  username   String?  @unique
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}

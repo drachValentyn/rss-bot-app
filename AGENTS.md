@@ -6,7 +6,7 @@ You have a description of the structure in @docs/structure
 
 **Purpose:** Automated job search aggregator and application tracker for Ukrainian developers
 **Status:** MVP in development
-**Tech Stack:** TypeScript, Next.js, Prisma, Supabase PostgreSQL, Telegram Bot (grammY)
+**Tech Stack:** TypeScript, Next.js, NestJS, PostgreSQL (Docker), Prisma, Telegram Bot (grammY)
 **Target:** Personal use → Small startup (scalable architecture)
 
 ---
@@ -26,29 +26,38 @@ Job hunting is chaotic and time-consuming:
 
 ## Technology Decisions & Why
 
-### Database: Supabase (PostgreSQL)
+### Database: PostgreSQL 16 in Docker
 
-- **Why:** Free tier, cloud-hosted, production-ready from day 1
-- **Alternative considered:** Local PostgreSQL (rejected: requires manual setup)
-- **Connection:** Direct via DATABASE_URL + DIRECT_URL for migrations
+- **Why:** Self-hosted, no external dependencies, full control
+- **Connection:** `postgresql://postgres:postgres@localhost:5432/jobtracker`
+- **Start:** `docker-compose up`
 
-### ORM: Prisma 7
+### ORM: Prisma 7 (migrations only)
 
-- **Why:** Type-safe, auto-migrations, great DX
+- **Why:** Type-safe migrations, great DX
 - **⚠️ Critical:** Uses Prisma 7 with driver adapters (pg adapter required)
-- **Location:** Generated client in `./generated/prisma/client`
-- **Config:** Uses `prisma.config.ts` (new in Prisma 6+)
+- **Schema location:** `prisma/schema.prisma` (root) and `backend/prisma/schema.prisma`
+- **Actual queries:** Raw `pg` Pool in all services (bot, web-client, backend)
+
+### Backend: NestJS (RSS worker + REST API)
+
+- **Location:** `backend/`
+- **Port:** 3001
+- **RSS cron:** 9:00–19:00 hourly (`@Cron('0 9-19 * * *')`)
+- **Feeds:** DOU + Djinni
+- **API:** GET /vacancies, GET /vacancies/:id, GET /health, POST /rss/collect
 
 ### Frontend: Next.js 14+ (App Router)
 
 - **Why:** SSR, API routes, easy deployment to Vercel
 - **Structure:** Domain-driven (NOT FSD, NOT Atomic Design)
 - **Styling:** MUI (Material-UI) for speed
+- **DB:** Reads `DATABASE_URL` from root `.env` or its own `.env`
 
 ### Bot: grammY (not node-telegram-bot-api)
 
 - **Why:** Security issues in old library, better TypeScript support
-- **Migration:** Completed from old SQLite-based bot
+- **RSS:** Removed from bot — handled by NestJS backend
 
 ### TypeScript: Mandatory
 
@@ -83,9 +92,9 @@ Job hunting is chaotic and time-consuming:
 
 ### 3. Preparation for Scale
 
-- Supabase = production-ready from day 1
+- Docker = production-ready from day 1
 - Prisma = easy to change schema
-- Worker = easy to move to serverless
+- NestJS = easy to add more features
 - No technical debt that blocks growth
 
 ### 4. User-Centric
@@ -96,16 +105,31 @@ Job hunting is chaotic and time-consuming:
 
 ---
 
+## Running the Project
+
+```bash
+# Start PostgreSQL + NestJS backend
+docker-compose up
+
+# Start bot (in a separate terminal)
+cd bot && node index.js
+
+# Start web client (in a separate terminal)
+cd web-client && npm run dev
+```
+
+---
+
 ## Future Features (Roadmap)
 
 ### Phase 1 (Current): MVP
 
-- [x] Database setup (Supabase + Prisma)
+- [x] Database setup (Docker PostgreSQL + Prisma)
 - [x] Basic schema (vacancies, users)
-- [x] Migration from old SQLite bot
-- [ ] RSS worker implementation
-- [ ] Bot commands with Prisma
-- [ ] Basic web UI (vacancy list)
+- [x] Migration from old SQLite-based bot
+- [x] RSS worker (NestJS cron job)
+- [x] Bot commands with pg
+- [x] Basic web UI (vacancy list)
 
 ### Phase 2: Core Features
 
@@ -138,14 +162,34 @@ Job hunting is chaotic and time-consuming:
 1. **Check Architecture:** Review this doc's Architecture section
 2. **Check Prisma Version:** We use Prisma 7 (requires adapters!)
 3. **Check Structure:** Follow domain-driven pattern, not FSD
-4. **Check .env:** Ensure DATABASE_URL has encoded password
+4. **Check .env:** Ensure DATABASE_URL points to Docker PostgreSQL
+
+### Project Structure
+
+```
+rss-job-bot/
+├── backend/          # NestJS RSS worker + REST API
+│   ├── src/
+│   │   ├── main.ts
+│   │   ├── app.module.ts
+│   │   ├── prisma.service.ts  (pg Pool wrapper)
+│   │   ├── rss/               (RSS cron + manual trigger)
+│   │   └── vacancies/         (REST API endpoints)
+│   ├── prisma/schema.prisma
+│   └── Dockerfile
+├── bot/              # Telegram bot (grammY)
+├── web-client/       # Next.js frontend
+├── prisma/           # Root schema (for migrations from host)
+├── docker-compose.yml
+└── .env              # DATABASE_URL for local services
+```
 
 ## Contacts & Resources
 
 **Documentation:**
 
 - Prisma: https://www.prisma.io/docs
-- Supabase: https://supabase.com/docs
+- NestJS: https://docs.nestjs.com
 - Next.js: https://nextjs.org/docs
 - grammY: https://grammy.dev
 
@@ -161,12 +205,14 @@ Job hunting is chaotic and time-consuming:
 - **Use Prisma Studio** - visual debugging is faster than console.log
 - **Respect architecture** - domain-driven structure is intentional
 - **Ask before big changes** - especially to database schema or architecture
+- **Supabase is completely removed** - do not reference it
 
-**When in doubt:** Check Supabase dashboard → Verify with Prisma Studio → Read this doc → Search official docs → Ask user
+**When in doubt:** Check docker-compose → Verify with pg connect → Read this doc → Search official docs → Ask user
 
 ---
 
-_Last Updated: February 10, 2025_
+_Last Updated: March 3, 2026_
 _Prisma Version: 7.3.0_
+_NestJS Version: 10.x_
 _Next.js Version: 14+_
 _Node.js Version: 20+_
